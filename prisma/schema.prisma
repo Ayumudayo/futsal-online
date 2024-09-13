@@ -20,6 +20,9 @@ model User {
   password    String                                              // 암호화된 비밀번호
   cash        Int       @default(10000)                           // 유저의 캐시 잔액, 기본값은 10000
   leaguePoint Int       @default(1000)                            // 게임 점수, 기본값은 1000점
+  wins        Int       @default(0)    // 승리 횟수
+  losses      Int       @default(0)    // 패배 횟수
+  draws       Int       @default(0)    // 무승부 횟수
   createdAt   DateTime  @default(now())                           // 계정 생성 시간
   updatedAt   DateTime  @updatedAt                                // 마지막 업데이트 시간
 
@@ -103,7 +106,7 @@ model Match {
   playerBId  Int                                                // 플레이어 B의 유저 ID
   scoreA     Int                                                // 플레이어 A의 점수
   scoreB     Int                                                // 플레이어 B의 점수
-  result     MatchResult                                             // 경기 결과입니다 ('win', 'lose', 'draw')
+  result     MatchResult                                        // 경기 결과 ('win', 'lose', 'draw')
   playedAt   DateTime @default(now())                           // 경기 진행 시간
 
   // 1:N 관계: 한 명의 유저는 여러 경기에서 플레이어 A로 참여할 수 있음 (N:1 관계에서 N쪽에 해당)
