@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma.js';
+import dotenv from 'dotenv';
 
 const router = express.Router();
 
@@ -55,9 +56,8 @@ router.post('/login', async (req, res, next) => {
     {
       userId: users.userId,
     },
-    'MY_JWT_SECRET_KEY',
+    dotenv.config({ path: '.env.JWT_SECRET' }),
   );
-
   res.header('authorization', `Bearer ${token}`);
   return res.status(200).json({ message: '로그인 되었습니다.' });
 });
