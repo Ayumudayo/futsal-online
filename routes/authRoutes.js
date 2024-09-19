@@ -44,22 +44,21 @@ router.post('/signup', async (req, res, next) => {
 //** 로그인 */
 
 router.post('/login', async (req, res, next) => {
-    const { username, password } = req.body;
-    const users = await prisma.user.findFirst({ where: { username } });
-  
-    if (!users) return res.status(401).json({ message: '존재하지 않는 아이디입니다.' });
-    else if (!(await bcrypt.compare(password, users.password)))
-      return res.status(401).json({ message: '비밀번호가 일치하지 않습니다.' });
-  
-    const token = jwt.sign(
-      {
-        userId: users.userId,
-      },
-      'MY_JWT_SECRET_KEY',
-    );
-  
-    res.header('authorization', `Bearer ${token}`);
-    return res.status(200).json({ message: '로그인 되었습니다.' });
-  });
-export default router;
+  const { username, password } = req.body;
+  const users = await prisma.user.findFirst({ where: { username } });
 
+  if (!users) return res.status(401).json({ message: '존재하지 않는 아이디입니다.' });
+  else if (!(await bcrypt.compare(password, users.password)))
+    return res.status(401).json({ message: '비밀번호가 일치하지 않습니다.' });
+
+  const token = jwt.sign(
+    {
+      userId: users.userId,
+    },
+    'MY_JWT_SECRET_KEY',
+  );
+
+  res.header('authorization', `Bearer ${token}`);
+  return res.status(200).json({ message: '로그인 되었습니다.' });
+});
+export default router;
