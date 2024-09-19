@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma.js';
-import dotenv from 'dotenv';
 
+//** 회원가입 */
 export const postSignup = async (req, res, next) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -37,6 +37,7 @@ export const postSignup = async (req, res, next) => {
   return res.status(201).json({ message: '회원가입 성공.' });
 };
 
+//** 로그인 */
 export const postLogin = async (req, res, next) => {
   const { username, password } = req.body;
   const { JWT_SECRET } = process.env;
