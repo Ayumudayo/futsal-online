@@ -55,10 +55,10 @@ router.post('/login', async (req, res, next) => {
       {
         userId: users.userId,
       },
-      'custom-secret-key',
+      'MY_JWT_SECRET_KEY',
     );
   
-    res.cookie('authorization', `Bearer ${token}`);
+    res.header('authorization', `Bearer ${token}`);
     return res.status(200).json({ message: '로그인 되었습니다.' });
   });
 export default router;
