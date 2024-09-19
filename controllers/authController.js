@@ -18,7 +18,7 @@ export const postSignup = async (req, res, next) => {
   }
 
   if (password.length < 6)
-    return res.status(409).send({ message: '비밀번호를 다시 작성해주세요.' });
+    return res.status(400).send({ message: '비밀번호를 다시 작성해주세요.' });
 
   const ExistUsername = await prisma.user.findFirst({
     where: {
@@ -41,15 +41,15 @@ export const postSignup = async (req, res, next) => {
 export const postLogin = async (req, res, next) => {
   const { username, password } = req.body;
   const { JWT_SECRET } = process.env;
-  const users = await prisma.user.findFirst({ where: { username } });
+  const user = await prisma.user.findFirst({ where: { username } });
 
-  if (!users) return res.status(401).json({ message: '존재하지 않는 아이디입니다.' });
-  else if (!(await bcrypt.compare(password, users.password)))
+  if (!user) return res.status(401).json({ message: '존재하지 않는 아이디입니다.' });
+  else if (!(await bcrypt.compare(password, user.password)))
     return res.status(401).json({ message: '비밀번호가 일치하지 않습니다.' });
 
   const token = jwt.sign(
     {
-      userId: users.userId,
+      id: user.id,
     },
     JWT_SECRET,
   );
