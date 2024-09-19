@@ -13,109 +13,98 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 유저
+// 유저 모델
 model User {
-  id          Int       @id @default(autoincrement())             // 유저 고유 ID, 자동 증가
-  username    String    @unique                                   // 고유한 유저명
-  password    String                                              // 암호화된 비밀번호
-  cash        Int       @default(10000)                           // 유저의 캐시 잔액, 기본값은 10000
-  leaguePoint Int       @default(1000)                            // 게임 점수, 기본값은 1000점
-  wins        Int       @default(0)    // 승리 횟수
-  losses      Int       @default(0)    // 패배 횟수
-  draws       Int       @default(0)    // 무승부 횟수
-  createdAt   DateTime  @default(now())                           // 계정 생성 시간
-  updatedAt   DateTime  @updatedAt                                // 마지막 업데이트 시간
+  id          Int      @id @default(autoincrement())           // 유저 고유 ID
+  username    String   @unique                                 // 고유한 유저명
+  password    String                                           // 암호화된 비밀번호
+  cash        Int      @default(10000)                         // 유저의 캐시 잔액, 기본값은 10000
+  leaguePoint Int      @default(1000)                          // 리그 포인트, 기본값은 1000점
+  wins        Int      @default(0)                             // 승리 횟수
+  losses      Int      @default(0)                             // 패배 횟수
+  draws       Int      @default(0)                             // 무승부 횟수
+  createdAt   DateTime @default(now())                         // 계정 생성 시간
+  updatedAt   DateTime @updatedAt                              // 마지막 업데이트 시간
 
-  // 1:N 관계: 한 명의 유저는 여러 명의 선수를 보유할 수 있음
-  userPlayers UserPlayer[]                                      // 유저가 보유한 선수들
-  
-  // 1:N 관계: 한 명의 유저는 여러 팀을 만들 수 있음
-  teams       Team[]                                            // 유저가 만든 팀들
-  
-  // 1:N 관계: 한 명의 유저는 여러 경기에서 플레이어 A로 참여할 수 있음
+  // 1:N 관계 - 한 명의 유저는 여러 명의 선수를 보유할 수 있음
+  userPlayers UserPlayer[]                                     // 유저가 보유한 선수들
+
+  // 1:N 관계 - 한 명의 유저는 여러 팀을 만들 수 있음
+  teams       Team[]                                           // 유저가 만든 팀들
+
+  // 1:N 관계 - 한 명의 유저는 여러 경기에서 플레이어 A 또는 B로 참여할 수 있음
   matchesA    Match[]   @relation("matchesAsPlayerA")           // 플레이어 A로 참여한 경기들
-  
-  // 1:N 관계: 한 명의 유저는 여러 경기에서 플레이어 B로 참여할 수 있음
   matchesB    Match[]   @relation("matchesAsPlayerB")           // 플레이어 B로 참여한 경기들
 }
 
-// 선수         
-model Player {          
-  id          Int       @id @default(autoincrement())           // 선수 고유 ID
-  name        String                                            // 선수 이름
-  speed       Int                                               // 속력 능력치
-  goalScoring Int                                               // 골 결정력 능력치
-  shotPower   Int                                               // 슛 파워 능력치
-  defense     Int                                               // 수비 능력치
-  stamina     Int                                               // 스태미너 능력치
+// 선수 모델 (템플릿 역할)
+model Player {
+  id          Int      @id @default(autoincrement())          // 선수 고유 ID (템플릿)
+  name        String                                          // 선수 이름
+  speed       Int                                             // 속력 능력치
+  goalScoring Int                                             // 골 결정력 능력치
+  shotPower   Int                                             // 슛 파워 능력치
+  defense     Int                                             // 수비 능력치
+  stamina     Int                                             // 스태미너 능력치
 
-  // 1:N 관계: 한 명의 선수를 여러 유저가 보유할 수 있음
-  userPlayers UserPlayer[]                                      // 이 선수를 보유한 유저들
+  // 1:N 관계 - 동일한 선수를 여러 유저가 보유할 수 있음
+  userPlayers UserPlayer[]                                    // 이 선수 템플릿을 보유한 유저들
 }
 
-// 유저와 선수를 연결하는 모델
+// 유저가 보유한 선수 모델
 model UserPlayer {
-  id          Int        @id @default(autoincrement())                          // 고유 ID
-  userId      Int                                                               // 유저 ID
-  playerId    Int                                                               // 선수 ID
-  level       Int        @default(1)                                            // 선수의 강화 레벨
-  createdAt   DateTime   @default(now())                                        // 생성 시간
-  updatedAt   DateTime   @updatedAt                                             // 업데이트 시간
+  id        Int      @id @default(autoincrement())           // 고유 ID
+  userId    Int                                              // 유저 ID
+  playerId  Int                                              // 선수 템플릿 ID
+  teamId    Int?                                             // 소속 팀 ID (null 가능)
+  level     Int      @default(0)                             // 선수의 강화 레벨 (기본값 0)
+  value     Int      @default(0)                             // 선수의 가치 (기본값 0) < 서버에서 계산 후 저장
+  createdAt DateTime @default(now())                         // 생성 시간
+  updatedAt DateTime @updatedAt                              // 마지막 업데이트 시간
 
-  // 1:1 관계: 한 명의 UserPlayer는 한 명의 유저와만 연결됨 (N:1 관계에서 N쪽에 해당)
-  user        User       @relation(fields: [userId], references: [id])          // 소유한 유저
-  
-  // 1:1 관계: 한 명의 UserPlayer는 한 명의 선수와만 연결됨 (N:1 관계에서 N쪽에 해당)
-  player      Player     @relation(fields: [playerId], references: [id])        // 원본 선수
-  
-  // 1:N 관계: 한 명의 UserPlayer는 여러 팀 선수들과 연결될 수 있음
-  teamPlayers TeamPlayer[]                                                      // 이 선수가 속한 팀 선수들
+  // N:1 관계 - 한 명의 유저가 여러 명의 선수를 보유할 수 있음
+  user      User     @relation(fields: [userId], references: [id])   // 소유한 유저
+
+  // N:1 관계 - 한 명의 유저 선수는 하나의 선수 템플릿과 연결됨
+  player    Player   @relation(fields: [playerId], references: [id]) // 선수 템플릿
+
+  // N:1 관계 - 한 명의 유저 선수는 하나의 팀에 소속될 수 있음 (optional)
+  team      Team?    @relation(fields: [teamId], references: [id])   // 소속 팀
 }
 
 // 팀 모델
 model Team {
-  id          Int         @id @default(autoincrement())                         // 팀 고유 ID
-  userId      Int                                                               // 유저 ID
-  createdAt   DateTime    @default(now())                                       // 팀 생성 시간
-  updatedAt   DateTime    @updatedAt                                            // 팀 업데이트 시간
+  id        Int      @id @default(autoincrement())           // 팀 고유 ID
+  userId    Int                                              // 유저 ID
+  name      String                                           // 팀 이름
+  createdAt DateTime @default(now())                         // 팀 생성 시간
+  updatedAt DateTime @updatedAt                              // 마지막 업데이트 시간
 
-  // 1:N 관계: 한 명의 유저는 여러 팀을 만들 수 있음 (N:1 관계에서 N쪽에 해당)
-  user        User        @relation(fields: [userId], references: [id])         // 팀 소유자
-  
-  // 1:N 관계: 한 팀은 여러 팀 선수들과 연결될 수 있음
-  teamPlayers TeamPlayer[]                                                      // 팀에 속한 선수들
+  // N:1 관계 - 한 명의 유저는 여러 팀을 만들 수 있음
+  user      User     @relation(fields: [userId], references: [id])   // 팀 소유자
+
+  // 1:N 관계 - 한 팀은 여러 명의 선수를 보유할 수 있음
+  players   UserPlayer[]                                             // 팀에 속한 선수들
 }
 
-// 팀과 선수를 연결하는 모델
-model TeamPlayer {
-  id           Int         @id @default(autoincrement())                        // 고유 ID
-  teamId       Int                                                              // 팀 ID
-  userPlayerId Int                                                              // 유저 선수 ID
-
-  // 1:N 관계: 한 팀에 여러 유저 선수가 속할 수 있음 (N:1 관계에서 N쪽에 해당)
-  team         Team        @relation(fields: [teamId], references: [id])        // 소속 팀
-  
-  // 1:N 관계: 한 명의 UserPlayer는 여러 팀에 포함될 수 있음 (N:1 관계에서 N쪽에 해당)
-  userPlayer   UserPlayer  @relation(fields: [userPlayerId], references: [id])  // 팀에 포함된 유저 선수
-}
-
-// 경기 결과를 저장하는 모델
+// 경기 모델
 model Match {
-  id         Int      @id @default(autoincrement())             // 경기 고유 ID
-  playerAId  Int                                                // 플레이어 A의 유저 ID
-  playerBId  Int                                                // 플레이어 B의 유저 ID
-  scoreA     Int                                                // 플레이어 A의 점수
-  scoreB     Int                                                // 플레이어 B의 점수
-  result     MatchResult                                        // 경기 결과 ('win', 'lose', 'draw')
-  playedAt   DateTime @default(now())                           // 경기 진행 시간
+  id        Int      @id @default(autoincrement())           // 경기 고유 ID
+  playerAId Int                                              // 플레이어 A의 유저 ID
+  playerBId Int                                              // 플레이어 B의 유저 ID
+  scoreA    Int                                              // 플레이어 A의 점수
+  scoreB    Int                                              // 플레이어 B의 점수
+  result    MatchResult                                      // 경기 결과 (WIN, LOSE, DRAW)
+  playedAt  DateTime @default(now())                         // 경기 진행 시간
 
-  // 1:N 관계: 한 명의 유저는 여러 경기에서 플레이어 A로 참여할 수 있음 (N:1 관계에서 N쪽에 해당)
-  playerA    User     @relation("matchesAsPlayerA", fields: [playerAId], references: [id]) // 플레이어 A
-  
-  // 1:N 관계: 한 명의 유저는 여러 경기에서 플레이어 B로 참여할 수 있음 (N:1 관계에서 N쪽에 해당)
-  playerB    User     @relation("matchesAsPlayerB", fields: [playerBId], references: [id]) // 플레이어 B
+  // N:1 관계 - 한 명의 유저는 플레이어 A로 여러 경기에 참여할 수 있음
+  playerA   User     @relation("matchesAsPlayerA", fields: [playerAId], references: [id]) // 플레이어 A
+
+  // N:1 관계 - 한 명의 유저는 플레이어 B로 여러 경기에 참여할 수 있음
+  playerB   User     @relation("matchesAsPlayerB", fields: [playerBId], references: [id]) // 플레이어 B
 }
 
+// 경기 결과를 나타내는 Enum
 enum MatchResult {
   WIN
   LOSE
