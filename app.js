@@ -5,6 +5,7 @@ import logMiddleware from './middlewares/logMiddleware.js';
 import errorHandlingMiddleware from './middlewares/errorHandlingMiddleware.js';
 
 import authRoutes from './routes/authRoutes.js';
+import teamRoutes from './routes/teamRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use(logMiddleware);
 
 app.use('/api/auth', authRoutes);
+app.use('/api/teams', teamRoutes);
 
 app.use(errorHandlingMiddleware);
 

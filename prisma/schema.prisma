@@ -23,6 +23,7 @@ model User {
   wins        Int      @default(0)                             // 승리 횟수
   losses      Int      @default(0)                             // 패배 횟수
   draws       Int      @default(0)                             // 무승부 횟수
+  totalValue  BigInt   @default(0)                             // 구단 가치
   createdAt   DateTime @default(now())                         // 계정 생성 시간
   updatedAt   DateTime @updatedAt                              // 마지막 업데이트 시간
 

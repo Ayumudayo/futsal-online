@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `UserPlayer` MODIFY `level` INTEGER NOT NULL DEFAULT 0;
