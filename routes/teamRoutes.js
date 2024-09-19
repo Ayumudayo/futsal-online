@@ -5,9 +5,9 @@ import authMiddleware from '../middlewares/authMiddleware.js';
 const router = express.Router();
 
 router.post('/', authMiddleware, createTeam);
-router.post('/:teamId/players', authMiddleware, addPlayer);
-router.delete('/:teamId/players', authMiddleware, removePlayer);
-router.patch('/:teamId/players', authMiddleware, editTeam);
+router.post('/:teamId/addPlayers', authMiddleware, addPlayer);
+router.delete('/:teamId/rmPlayers', authMiddleware, removePlayer);
+router.patch('/:teamId/editTeam', authMiddleware, editTeam);
 router.get('/:teamId', authMiddleware, getTeam);
 router.get('/', authMiddleware, getAllTeams);
 

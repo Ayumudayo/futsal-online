@@ -21,10 +21,12 @@ export const playMatch = async (req, res, next) => {
       include: { players: { include: { player: true } } },
     });
 
+    // 존재 여부 검사
     if (!userTeam || !opponentTeam) {
       return res.status(400).json({ message: '팀을 찾을 수 없습니다.' });
     }
 
+    // 인원수 검사
     if (userTeam.players.length !== 3 || opponentTeam.players.length !== 3) {
       return res.status(400).json({ message: '양 팀 모두 3명의 선수가 있어야 합니다.' });
     }
@@ -139,7 +141,7 @@ export const autoMatch = async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
-    // LP가 +-30 범위 내의 상대 찾기
+    // LP +-30 범위 내의 상대 찾기
     const minLP = user.leaguePoint - 30;
     const maxLP = user.leaguePoint + 30;
 
