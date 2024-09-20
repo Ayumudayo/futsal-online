@@ -17,6 +17,8 @@ app.use(express.json());
 app.use(logMiddleware);
 
 app.use('/api/auth', authRoutes);
+// 사용자 API 라우트
+// 가챠 API 라우트
 app.use('/api/teams', teamRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/user', userRoutes);
