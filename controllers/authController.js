@@ -47,6 +47,7 @@ export const postLogin = async (req, res, next) => {
   else if (!(await bcrypt.compare(password, user.password)))
     return res.status(401).json({ message: '비밀번호가 일치하지 않습니다.' });
 
+  // 임시 유효기간 1Day (1d)
   const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1d' });
   res.header('authorization', `Bearer ${token}`);
   return res.status(200).json({ message: '로그인 되었습니다.' });
