@@ -1,5 +1,6 @@
 import express from 'express';
 import { postSignup, postLogin } from '../controllers/authController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -7,6 +8,6 @@ const router = express.Router();
 router.post('/signup', postSignup);
 
 //** 로그인 */
-router.post('/login', postLogin);
+router.post('/login', postLogin, authMiddleware);
 
 export default router;
