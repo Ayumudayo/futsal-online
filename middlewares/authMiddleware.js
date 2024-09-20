@@ -4,13 +4,14 @@ import prisma from '../utils/prisma.js';
 export const authenicateToken = async (req, res, next) => {
   try {
     const { authorization } = req.headers;
+    const { JWT_SECRET } = process.env;
 
     if (!authorization) throw new Error('토큰이 존재하지 않습니다.');
 
     const [tokenType, token] = authorization.split(' ');
 
     if (tokenType !== 'Bearer') throw new Error('토큰 타입이 일치하지 않습니다.');
-    const decodedToken = jwt.verify(token, 'JWT_SECRET');
+    const decodedToken = jwt.verify(token, JWT_SECRET);
     const id = decodedToken.id;
 
     const user = await prisma.user.findFirst({
