@@ -4,6 +4,6 @@ import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-router.post('/rank', authMiddleware, rankSort);
+router.get('/rank', authMiddleware, rankSort);
 
 export default router;
