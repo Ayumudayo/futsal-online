@@ -1,9 +1,9 @@
 import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma.js';
 
-export default async function (req, res, next) {
+export const authenicateToken = async (req, res, next) => {
   try {
-    const { authorization } = req.header;
+    const { authorization } = req.headers;
 
     if (!authorization) throw new Error('토큰이 존재하지 않습니다.');
 
@@ -17,7 +17,7 @@ export default async function (req, res, next) {
       where: { id: +id },
     });
     if (!user) {
-      res.header('authorization');
+      res.headers('authorization');
       throw new Error('토큰 사용자가 존재하지 않습니다.');
     }
 
@@ -25,10 +25,10 @@ export default async function (req, res, next) {
 
     next();
   } catch (error) {
-    res.header('authorization');
+    res.headers('authorization');
 
     switch (error.name) {
-      case 'TokenError':
+      case 'TokenExpiredError':
         return res.status(401).json({ message: '토큰이 만료되었습니다.' });
       case 'JsonWebTokenError':
         return res.status(401).json({ message: '토큰이 조작되었습니다.' });
@@ -36,4 +36,4 @@ export default async function (req, res, next) {
         return res.status(401).json({ message: error.message ?? '비정상적인 요청입니다.' });
     }
   }
-}
+};
