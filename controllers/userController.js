@@ -5,7 +5,7 @@ export const rankSort = async (req, res, next) => {
     let sortTypeField
 
     switch(sortType) {
-        case 'win':
+        case 'wins':
             sortTypeField = 'wins';
             break;
         case 'totalValue':
@@ -29,6 +29,7 @@ export const rankSort = async (req, res, next) => {
         }
     });
 
+    // totalValue가 bigint라 string로 변경(json에서는 bigint를 지원하지 않는다고 한다.)
     const totalValueToString = user.map(user => ({
         ...user,
         totalValue: user.totalValue.toString()
