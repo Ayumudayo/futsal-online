@@ -44,13 +44,15 @@ function isSamePlayer(player1, player2) {
     return key.every(item => player1[item] === player2[item]);
 }
 
+const dbDataMap = dbData.reduce((map, player) => {
+    map[player.id] = player;
+    return map;
+}, {});
+
+
 // 새로운 데이터를 DB에 삽입 / 데이터 변경
 for(let i=0; i<firstSheeJson.length; i++) {
-    const isPlayer = await prisma.player.findFirst({
-        where: {
-            id: firstSheeJson[i]['id']
-        }
-    });
+    const isPlayer = dbDataMap[firstSheeJson[i]['id']];
     if(isPlayer) {
         if(!isSamePlayer(firstSheeJson[i], dbData[i])) {
             console.log(dbData[i]['name'] + '변경!!!!');
