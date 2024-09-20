@@ -1,5 +1,12 @@
 import express from 'express';
-import { createTeam, addPlayer, removePlayer, editTeam, getTeam, getAllTeams } from '../controllers/teamController.js';
+import {
+  createTeam,
+  addPlayer,
+  removePlayer,
+  editTeam,
+  getTeam,
+  getAllTeams,
+} from '../controllers/teamController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();

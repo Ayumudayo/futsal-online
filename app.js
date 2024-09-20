@@ -7,7 +7,8 @@ import errorHandlingMiddleware from './middlewares/errorHandlingMiddleware.js';
 import authRoutes from './routes/authRoutes.js';
 import teamRoutes from './routes/teamRoutes.js';
 import matchRoutes from './routes/matchRoutes.js';
-import userRoutes from './routes/userRoutes.js'
+import rankingRoutes from './routes/rankingRoutes.js';
+import enhancementRoutes from './routes/enhancementRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -21,7 +22,8 @@ app.use('/api/auth', authRoutes);
 // 가챠 API 라우트
 app.use('/api/teams', teamRoutes);
 app.use('/api/match', matchRoutes);
-app.use('/api/user', userRoutes);
+app.use('/api/rankings', rankingRoutes);
+app.use('/api/enhancement', enhancementRoutes);
 
 app.use(errorHandlingMiddleware);
 

@@ -15,7 +15,7 @@ export const authenticateToken = async (req, res, next) => {
     const id = decodedToken.id;
 
     const user = await prisma.user.findFirst({
-      where: { id: +id },
+      where: { id: parseInt(id) },
     });
     if (!user) {
       res.headers('authorization');
