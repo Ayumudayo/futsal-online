@@ -2,7 +2,7 @@ import prisma from '../utils/prisma.js';
 
 export const buyCash = async (req, res, next) => {
   try {
-    // 캐시 추가 구현
+    // 캐시 추가 구현 제대로 합니다
   } catch (error) {
     next(error);
   }
