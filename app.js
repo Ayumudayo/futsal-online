@@ -9,6 +9,7 @@ import teamRoutes from './routes/teamRoutes.js';
 import matchRoutes from './routes/matchRoutes.js';
 import rankingRoutes from './routes/rankingRoutes.js';
 import enhancementRoutes from './routes/enhancementRoutes.js';
+import gachaRoutes from './routes/gachaRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -19,7 +20,7 @@ app.use(logMiddleware);
 
 app.use('/api/auth', authRoutes);
 // 사용자 API 라우트
-// 가챠 API 라우트
+app.use('/api/gacha', gachaRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/rankings', rankingRoutes);
