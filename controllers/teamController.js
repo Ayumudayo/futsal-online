@@ -5,11 +5,12 @@ export const createTeam = async (req, res, next) => {
   try {
     const { name } = req.body;
     const { userId } = req.user;
-
+    
     const team = await prisma.team.create({
       data: { name, userId },
     });
 
+    // 요소 생성에 성공한 것이므로 201로 반환
     res.status(201).json({ message: '팀 생성에 성공했습니다.', team });
   } catch (error) {
     next(error);
@@ -25,7 +26,7 @@ export const addPlayer = async (req, res, next) => {
 
     // 팀 소유권 확인
     const team = await prisma.team.findFirst({
-      where: { id: Number(teamId), userId },
+      where: { id: parseInt(teamId), userId },    // 팀 ID와 유저 ID를 통해 확인
     });
     if (!team) {
       return res.status(404).json({ message: '팀을 찾을 수 없습니다.' });
@@ -33,7 +34,7 @@ export const addPlayer = async (req, res, next) => {
 
     // 팀의 선수 수 확인
     const teamPlayersCount = await prisma.userPlayer.count({
-      where: { teamId: team.id },
+      where: { teamId: team.id },   // count로 조건을 만족하는 튜플의 개수 확인
     });
     if (teamPlayersCount >= 3) {
       return res.status(400).json({ message: '팀이 가득 찼습니다.' });
@@ -41,14 +42,14 @@ export const addPlayer = async (req, res, next) => {
 
     // 선수 소유권 및 미소속 여부 확인
     const userPlayer = await prisma.userPlayer.findFirst({
-      where: { id: userPlayerId, userId, teamId: null },
+      where: { id: userPlayerId, userId, teamId: null },    // 추가하려는 선수가 유저가 보유중인지 확인
     });
     if (!userPlayer) {
       return res.status(400).json({ message: '선수를 추가할 수 없습니다.' });
     }
 
     // 선수 팀에 추가
-    await prisma.userPlayer.update({
+    await prisma.userPlayer.update({    // 팀 추가는 선수의 teamId 속성을 채워 수행, 없으면 NULL
       where: { id: userPlayerId },
       data: { teamId: team.id },
     });
@@ -68,7 +69,7 @@ export const removePlayer = async (req, res, next) => {
 
     // 팀 소유권 확인
     const team = await prisma.team.findFirst({
-      where: { id: Number(teamId), userId },
+      where: { id: parseInt(teamId), userId },
     });
     if (!team) {
       return res.status(404).json({ message: '팀을 찾을 수 없습니다.' });
@@ -77,7 +78,7 @@ export const removePlayer = async (req, res, next) => {
     // 선수 확인 및 팀 소속 여부 확인
     const userPlayer = await prisma.userPlayer.findFirst({
       where: {
-        id: Number(userPlayerId),
+        id: parseInt(userPlayerId),
         userId,
         teamId: team.id,
       },
@@ -109,6 +110,8 @@ export const editTeam = async (req, res, next) => {
 
     // 입력을 배열로 변환하고 숫자로 매핑
     // 잘못된 입력을 filter(Boolean)을 통해 필터링
+    // https://lily-choi.tistory.com/12
+    // 잘못된 값들을 간편히 거를 수 있음
     const toSet = (input) => new Set([].concat(input).filter(Boolean).map(Number));
 
     // addPlayers와 removePlayers를 숫자 Set으로 변환
@@ -116,6 +119,8 @@ export const editTeam = async (req, res, next) => {
     const removeSet = toSet(removePlayers);
 
     // 교집합을 찾아 양쪽에서 제거
+    // 원래 클라이언트에서 막아야 하지만
+    // 지금은 그런 게 없으므로 걸러냄
     [...addSet].forEach((id) => {
       if (removeSet.has(id)) {
         addSet.delete(id);
@@ -164,7 +169,7 @@ export const editTeam = async (req, res, next) => {
       // 선수 추가 처리
       if (addPlayerIds.length > 0) {
         const availableSlots = 3 - currentPlayerCount;
-        if (addPlayerIds.length > availableSlots) {
+        if (addPlayerIds.length > availableSlots) {   // 3명을 초과하는지 확인
           throw new Error(`팀에 추가할 수 있는 선수는 최대 ${availableSlots}명입니다.`);
         }
 
@@ -173,11 +178,11 @@ export const editTeam = async (req, res, next) => {
             where: {
               id: playerId,
               userId,
-              teamId: null, // 팀에 소속되지 않은 선수
+              teamId: null, // 일단 단일 팀에만 소속될 수 있다고 생각 -> 팀에 소속되지 않은 선수만 추가할 수 있음
             },
           });
           if (!userPlayer) {
-            throw new Error(`ID가 ${playerId}인 선수를 추가할 수 없습니다.`);
+            throw new Error(`ID가 ${playerId}인 선수를 추가할 수 없습니다. 다른 팀에 이미 소속되어 있을 수도 있습니다.`);
           }
           await prisma.userPlayer.update({
             where: { id: userPlayer.id },
@@ -188,7 +193,7 @@ export const editTeam = async (req, res, next) => {
       }
     });
 
-    res.json({ message: '팀이 성공적으로 수정되었습니다.' });
+    res.status(200).json({ message: '팀이 성공적으로 수정되었습니다.' });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -202,9 +207,9 @@ export const getTeam = async (req, res, next) => {
 
     // 팀 소유권 확인
     const team = await prisma.team.findFirst({
-      where: { id: Number(teamId), userId },
+      where: { id: parseInt(teamId), userId },
       include: {
-        players: {
+        players: {          // 스키마의 88번 라인에 players라는 관계를 설정해 두었음
           include: {
             player: true,
           },
@@ -215,7 +220,7 @@ export const getTeam = async (req, res, next) => {
       return res.status(404).json({ message: '팀을 찾을 수 없습니다.' });
     }
 
-    res.json({ team });
+    res.status(200).json({ team });
   } catch (error) {
     next(error);
   }
@@ -229,7 +234,7 @@ export const getAllTeams = async (req, res, next) => {
     const teams = await prisma.team.findMany({
       where: { userId },
       include: {
-        players: {
+        players: {          // 스키마의 88번 라인에 players라는 관계를 설정해 두었음
           include: {
             player: true,
           },

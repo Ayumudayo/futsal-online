@@ -9,6 +9,7 @@ const calculatePlayerScore = (playerStats) => {
     stamina: 0.2,
   };
 
+  // 발제 문서에 있는 예시 활용
   const score =
     playerStats.speed * weights.speed +
     playerStats.goalScoring * weights.goalScoring +
@@ -19,6 +20,7 @@ const calculatePlayerScore = (playerStats) => {
   return score;
 };
 
+// reduce로 선수 능력치 합산
 const calculateTeamScore = (team) => {
   return team.players.reduce((total, up) => {
     const playerStats = up.player;
@@ -44,10 +46,20 @@ export const playMatch = async (req, res, next) => {
       },
     });
 
+    // 플레이를 위한 팀에 선수가 3명 있는지 확인
     const validUserTeams = userTeams.filter((team) => team.players.length === 3);
 
     if (validUserTeams.length === 0) {
       return res.status(400).json({ message: '자신의 팀이 없거나 선수가 부족합니다.' });
+    }   
+
+    // 상대팀 인원수도 확인
+    const validOpponentTeams = opponentTeams.filter((team) => team.players.length === 3);
+
+    if (validOpponentTeams.length === 0) {
+      return res
+        .status(400)
+        .json({ message: '상대방의 유효한 팀을 찾을 수 없거나 해당 유저가 존재하지 않습니다.' });
     }
 
     // 유저의 팀 중에서 랜덤하게 선택
@@ -65,14 +77,6 @@ export const playMatch = async (req, res, next) => {
         },
       },
     });
-
-    const validOpponentTeams = opponentTeams.filter((team) => team.players.length === 3);
-
-    if (validOpponentTeams.length === 0) {
-      return res
-        .status(400)
-        .json({ message: '상대방의 유효한 팀을 찾을 수 없거나 해당 유저가 존재하지 않습니다.' });
-    }
 
     // 상대방의 팀 중에서 랜덤하게 선택
     const opponentTeam = validOpponentTeams[Math.floor(Math.random() * validOpponentTeams.length)];
@@ -98,19 +102,19 @@ export const playMatch = async (req, res, next) => {
       resultMessage = '무승부';
     } else if (randomValue < scoreA) {
       // 유저 승리
-      scoreUser = Math.floor(Math.random() * 4) + 2; // 2에서 5 사이
+      scoreUser = Math.floor(Math.random() * 4) + 2;      // 2에서 5 사이
       scoreOpponent = Math.floor(Math.random() * Math.min(3, scoreUser));
       matchResult = 'WIN';
       resultMessage = '승리';
     } else {
       // 유저 패배
-      scoreOpponent = Math.floor(Math.random() * 4) + 2; // 2에서 5 사이
+      scoreOpponent = Math.floor(Math.random() * 4) + 2;  // 2에서 5 사이
       scoreUser = Math.floor(Math.random() * Math.min(3, scoreOpponent));
       matchResult = 'LOSE';
       resultMessage = '패배';
     }
 
-    // 트랜잭션 시작
+    // 기록을 위한 트랜잭션
     await prisma.$transaction(async (prisma) => {
       // 경기 기록 생성
       await prisma.match.create({
@@ -172,7 +176,7 @@ export const playMatch = async (req, res, next) => {
       }
     });
 
-    res.json({
+    res.status(200).json({
       message: `경기가 완료되었습니다. 결과: ${resultMessage}`,
       score: `${scoreUser} - ${scoreOpponent}`,
     });
@@ -186,7 +190,6 @@ export const autoMatch = async (req, res, next) => {
 
   try {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    console.log(user);
 
     // LP +-30 범위 내의 상대 찾기
     const minLP = user.leaguePoint - 30;
@@ -214,7 +217,6 @@ export const autoMatch = async (req, res, next) => {
 
     // 경기를 진행하기 위해 opponentId 설정
     req.params.opponentId = opponent.id;
-    console.log(`Opponents ${opponents}`);
     return playMatch(req, res, next);
     //return res.json('test');
   } catch (error) {
