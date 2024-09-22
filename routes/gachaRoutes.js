@@ -1,13 +1,10 @@
 import express from 'express';
-import { pull, multiPull } from '../controllers/gachaController.js';
+import { drawPlayers } from '../controllers/gachaController.js';
 import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// 단일 뽑기
-router.post('/pull', authMiddleware, pull);
-
-// 다중 뽑기
-router.post('/:times/multipull', authMiddleware, multiPull);
+router.post('/draw', authMiddleware, drawPlayers);
+// 단일 다중뽑기 합체
 
 export default router;
