@@ -3,26 +3,26 @@ import prisma from '../utils/prisma.js';
 export const buyCash = async (req, res, next) => {
   try {
     // 캐시 추가 구현
-    const { cashValue } = req.params;
-    const presentcashValue = req.user;
+    const { cashValue } = req.body;
+    const { userId } = req.user.userId;
 
-    const account = await prisma.account.findUnique({
-      where: { id: parseInt(presentcashValue) },
+    const user = await prisma.account.findUnique({
+      where: { id: parseInt(userId) },
     });
 
-    if (!account) {
+    if (!user) {
       return res.status(404).json({ error: 'The account is not existed' });
     }
 
-    if (account.user !== presentcashValue) {
+    if (user !== userId) {
       return res.status(403).json({ error: 'Cannot find the right account' });
     }
 
-    const updatedAccount = await prisma.account.updatedAccount({
-      where: { id: parseInt(cashValue) },
-      data: { cash: account.cash + 500 },
+    const cash = await prisma.account.cash({
+      where: { id: parseInt(userId) },
+      data: { cash: cash },
     });
-    res.status(200).json({ cash: updatedAccount.cash });
+    res.status(200).json({ cash: cash });
   } catch (error) {
     next(error);
   }
