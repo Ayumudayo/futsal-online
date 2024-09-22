@@ -1,18 +1,13 @@
 import express from 'express';
-import { GachaSystem } from '../models/GachaSystem.js';
+import { pull, multiPull } from '../controllers/gachaController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
-const gacha = new GachaSystem();
 
-router.get('/pull', (req, res) => {
-    const result = gacha.pull();
-    res.json(result);
-});
+// 단일 뽑기
+router.post('/pull', authMiddleware, pull);
 
-router.get('/multipull/:times', (req, res) => {
-    const times = parseInt(req.params.times);
-    const results = gacha.multiPull(times);
-    res.json(results);
-});
+// 다중 뽑기
+router.post('/:times/multipull', authMiddleware, multiPull);
 
 export default router;
