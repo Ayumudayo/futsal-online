@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import prisma from '../utils/prisma.js';
 
-export const authenticateToken = async (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
   try {
     const { authorization } = req.headers;
     const { JWT_SECRET } = process.env;
@@ -26,8 +26,6 @@ export const authenticateToken = async (req, res, next) => {
 
     next();
   } catch (error) {
-    res.headers('authorization');
-
     switch (error.name) {
       case 'TokenExpiredError':
         return res.status(401).json({ message: '토큰이 만료되었습니다.' });
@@ -38,3 +36,5 @@ export const authenticateToken = async (req, res, next) => {
     }
   }
 };
+
+export default authMiddleware;
