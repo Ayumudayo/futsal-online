@@ -1,17 +1,9 @@
-// import express from 'express';
+import express from 'express';
+import { drawPlayers } from '../controllers/gachaController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 
-// const router = express.Router();
-// const gacha = new GachaSystem();
+const router = express.Router();
 
-// router.get('/pull', (req, res) => {
-//     const result = gacha.pull();
-//     res.json(result);
-// });
+router.post('/draw', authMiddleware, drawPlayers);
 
-// router.get('/multipull/:times', (req, res) => {
-//     const times = parseInt(req.params.times);
-//     const results = gacha.multiPull(times);
-//     res.json(results);
-// });
-
-// export default router;
+export default router;
