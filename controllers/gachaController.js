@@ -1,81 +1,111 @@
 import prisma from '../utils/prisma.js';
-import { GachaSystem } from '../models/GachaSystem.js';
 
-const gacha = new GachaSystem();
+const DRAW_COST = 1000; // 기본 가챠 비용
 
-// 최종 계산식 아님!
-const calculateBaseValue = (player) =>
-  player.speed + player.goalScoring + player.shotPower + player.defense + player.stamina;
-
-// 최종 계산식 아님!
-const calculateEnhancedValue = (baseValue, level) => {
-  let multiplier = 1;
-  if (level === 0) multiplier = 1.0;
-  else if (level >= 1 && level <= 3) multiplier = 1.1;
-  else if (level >= 4 && level <= 6) multiplier = 1.3;
-  else if (level >= 7 && level <= 8) multiplier = 1.7;
-
-  return Math.floor(baseValue * multiplier);
+const pullPlayer = async () => {
+  const allPlayers = await prisma.player.findMany();
+  return allPlayers[Math.floor(Math.random() * allPlayers.length)];
 };
 
-export const drawPlayer = async (req, res, next) => {
-  try {
-    const player = gacha.pull();
-    const baseValue = calculateBaseValue(player);
-    const enhancedValue = calculateEnhancedValue(baseValue, 0); // 초기 레벨은 0으로 가정
+const calculateValue = (drawnPlayer) => {
+  return drawnPlayer.speed + drawnPlayer.goalScoring + drawnPlayer.shotPower + drawnPlayer.defense + drawnPlayer.stamina;
+};
 
-    // Prisma를 사용하여 데이터베이스에 플레이어 저장
-    const savedPlayer = await prisma.player.create({
-      data: {
-        ...player,
-        baseValue,
-        enhancedValue,
-        level: 0,
-        userId: req.user.id, // 요청을 보낸 사용자의 ID (인증 미들웨어 필요)
-      },
+export const pull = async (req, res, next) => {
+  const { userId } = req.user;
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (user.cash < DRAW_COST) {
+      return res.status(400).json({ message: '캐시가 부족합니다.' });
+    }
+
+    const result = await prisma.$transaction(async (prisma) => {
+      const drawnPlayer = await pullPlayer();
+      const value = calculateValue(drawnPlayer);
+
+      const [updatedUser, drawnUserPlayer] = await Promise.all([
+        prisma.user.update({
+          where: { id: userId },
+          data: { 
+            cash: { decrement: DRAW_COST },
+            totalValue: { increment: value }
+          },
+        }),
+        prisma.userPlayer.create({
+          data: {
+            userId,
+            value,
+            level: 0,
+          },
+          include: { player: true },
+        })
+      ]);
+
+      return { drawnUserPlayer, updatedUser };
     });
 
-    res.json(savedPlayer);
+    res.status(200).json({
+      message: '선수 뽑기에 성공했습니다.',
+      player: result.drawnUserPlayer.player,
+      totalValue: result.updatedUser.totalValue,
+    });
   } catch (error) {
     next(error);
   }
 };
 
-export const performMultiPull = async (req, res, next) => {
+export const multiPull = async (req, res, next) => {
+  const { userId } = req.user;
+  const times = parseInt(req.params.times);
+
+  if (isNaN(times) || times <= 0 || times > 10) {
+    return res.status(400).json({ message: '유효하지 않은 뽑기 횟수입니다.' });
+  }
+
+  const totalCost = DRAW_COST * times;
+
   try {
-    const times = parseInt(req.params.times);
-    const results = [];
+    const user = await prisma.user.findUnique({ where: { id: userId } });
 
-    for (let i = 0; i < times; i++) {
-      const player = gacha.pull();
-      const baseValue = calculateBaseValue(player);
-      const enhancedValue = calculateEnhancedValue(baseValue, 0);
+    if (user.cash < totalCost) {
+      return res.status(400).json({ message: '캐시가 부족합니다.' });
+    }
 
-      const savedPlayer = await prisma.player.create({
-        data: {
-          ...player,
-          baseValue,
-          enhancedValue,
-          level: 0,
-          userId: req.user.id,
+    const result = await prisma.$transaction(async (prisma) => {
+      const drawnPlayers = await Promise.all(Array(times).fill().map(() => pullPlayer()));
+      let totalValue = 0;
+
+      const drawnUserPlayers = await Promise.all(drawnPlayers.map(async (drawnPlayer) => {
+        const value = calculateValue(drawnPlayer);
+        totalValue += value;
+        return prisma.userPlayer.create({
+          data: {
+            userId,
+            value,
+            level: 0,
+          },
+          include: { player: true },
+        });
+      }));
+
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { 
+          cash: { decrement: totalCost },
+          totalValue: { increment: totalValue }
         },
       });
 
-      results.push(savedPlayer);
-    }
-
-    res.json(results);
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const getPulledPlayers = async (req, res, next) => {
-  try {
-    const players = await prisma.player.findMany({
-      where: { userId: req.user.id },
+      return { drawnUserPlayers, updatedUser };
     });
-    res.json(players);
+
+    res.status(200).json({
+      message: '다중 선수 뽑기에 성공했습니다.',
+      players: result.drawnUserPlayers.map(up => up.player),
+      totalValue: result.updatedUser.totalValue,
+    });
   } catch (error) {
     next(error);
   }
