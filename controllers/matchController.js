@@ -169,7 +169,7 @@ export const playMatch = async (req, res, next) => {
           where: { id: opponentId },
           data: {
             draws: { increment: 1 },
-            leaguePoint: { increment: 5 },
+            leaguePoint: { increment: 3 },
           },
         });
       }
@@ -204,7 +204,6 @@ export const autoMatch = async (req, res, next) => {
         },
       },
     });
-    console.log(opponents);
 
     if (opponents.length === 0) {
       return res.status(404).json({ message: '상대방을 찾을 수 없습니다.' });

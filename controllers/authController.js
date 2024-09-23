@@ -5,11 +5,13 @@ import prisma from '../utils/prisma.js';
 //** 회원가입 */
 export const postSignup = async (req, res, next) => {
   const { username, password } = req.body;
+
   if (!username || !password) {
     return res.status(400).json({
       error: 'username , password를 입력하세요.',
     });
   }
+
   const usernameRegex = /^[a-z0-9]+$/;
   if (!usernameRegex.test(username)) {
     return res.status(400).json({
