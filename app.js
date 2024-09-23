@@ -20,7 +20,7 @@ app.use(express.json());
 app.use(logMiddleware);
 
 app.use('/api/auth', authRoutes);
-app.use('/api/user', gachaRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/gacha', gachaRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/match', matchRoutes);

@@ -33,11 +33,16 @@ export const getUserProfile = async (req, res, next) => {
         wins: true,
         losses: true,
         draws: true,
-        totalPlayerValue: true,
+        totalValue: true,
       },
     });
 
-    res.json({ user });
+    const userProfile = {
+      ...user,
+      totalValue: user.totalValue.toString(),
+    };
+
+    return res.status(200).json({ data: userProfile });
   } catch (error) {
     next(error);
   }
