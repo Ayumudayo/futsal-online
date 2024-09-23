@@ -4,7 +4,7 @@ import authMiddleware from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// router.post('/buycash', authMiddleware, buyCash);
-// router.get('/profile', authMiddleware, getUserProfile);
+router.post('/buy-cash', authMiddleware, buyCash);
+router.get('/profile', authMiddleware, getUserProfile);
 
 export default router;
