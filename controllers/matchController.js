@@ -46,6 +46,18 @@ export const playMatch = async (req, res, next) => {
       },
     });
 
+    // 상대방의 팀 중에서 선수가 3명인 팀들을 가져옴
+    const opponentTeams = await prisma.team.findMany({
+      where: { userId: parseInt(opponentId) },
+      include: {
+        players: {
+          include: {
+            player: true,
+          },
+        },
+      },
+    });
+
     // 플레이를 위한 팀에 선수가 3명 있는지 확인
     const validUserTeams = userTeams.filter((team) => team.players.length === 3);
 
@@ -64,19 +76,6 @@ export const playMatch = async (req, res, next) => {
 
     // 유저의 팀 중에서 랜덤하게 선택
     const userTeam = validUserTeams[Math.floor(Math.random() * validUserTeams.length)];
-
-    // 상대방의 팀 중에서 선수가 3명인 팀들을 가져옴
-    console.log(`Opponent ID ${opponentId}`);
-    const opponentTeams = await prisma.team.findMany({
-      where: { userId: parseInt(opponentId) },
-      include: {
-        players: {
-          include: {
-            player: true,
-          },
-        },
-      },
-    });
 
     // 상대방의 팀 중에서 랜덤하게 선택
     const opponentTeam = validOpponentTeams[Math.floor(Math.random() * validOpponentTeams.length)];
