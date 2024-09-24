@@ -12,10 +12,10 @@ const calculateEnhancedValue = (baseValue, level) => {
 
 const calculatePlayerScore = (playerStats, enhanceLevel) => {
   const weights = {
-    speed: 0.1,
+    speed: 0.15,
     goalScoring: 0.25,
-    shotPower: 0.15,
-    defense: 0.3,
+    shotPower: 0.2,
+    defense: 0.2,
     stamina: 0.2,
   };
 
