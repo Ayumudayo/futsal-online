@@ -59,8 +59,10 @@ export const playMatch = async (req, res, next, opponentTeam = null) => {
       },
     });
 
-    if (!userTeam || (userTeam.userId !== userId)) {
-      return res.status(404).json({ message: '선택한 팀을 찾을 수 없거나 소유하고 있는 팀이 아닐 수 있습니다.' });
+    if (!userTeam || userTeam.userId !== userId) {
+      return res
+        .status(404)
+        .json({ message: '선택한 팀을 찾을 수 없거나 소유하고 있는 팀이 아닐 수 있습니다.' });
     }
 
     if (userTeam.players.length !== 3) {
@@ -68,8 +70,8 @@ export const playMatch = async (req, res, next, opponentTeam = null) => {
     }
 
     // 상대방의 팀 선택
+    // 상대방의 팀이 전달되지 않은 경우, 자동으로 선택
     if (!opponentTeam) {
-      // 상대방의 팀이 전달되지 않은 경우, 자동으로 선택
       const opponentTeams = await prisma.team.findMany({
         where: { userId: parseInt(opponentId) },
         include: {
@@ -95,7 +97,7 @@ export const playMatch = async (req, res, next, opponentTeam = null) => {
     const scoreA = calculateTeamScore(userTeam);
     const scoreB = calculateTeamScore(opponentTeam);
 
-    // 경기 시뮬레이션 로직 (기존과 동일)
+    // 경기 시뮬레이션을 위한 총 점수과 랜덤 값 생성
     const totalScore = scoreA + scoreB;
     const randomValue = Math.random() * totalScore;
 
@@ -112,13 +114,13 @@ export const playMatch = async (req, res, next, opponentTeam = null) => {
       resultMessage = '무승부';
     } else if (randomValue < scoreA) {
       // 유저 승리
-      scoreUser = Math.floor(Math.random() * 4) + 2;
+      scoreUser = Math.floor(Math.random() * 4) + 2; // 2에서 5 사이
       scoreOpponent = Math.floor(Math.random() * Math.min(3, scoreUser));
       matchResult = 'WIN';
       resultMessage = '승리';
     } else {
       // 유저 패배
-      scoreOpponent = Math.floor(Math.random() * 4) + 2;
+      scoreOpponent = Math.floor(Math.random() * 4) + 2; // 2에서 5 사이
       scoreUser = Math.floor(Math.random() * Math.min(3, scoreOpponent));
       matchResult = 'LOSE';
       resultMessage = '패배';
@@ -199,8 +201,6 @@ export const playMatch = async (req, res, next, opponentTeam = null) => {
   }
 };
 
-
-
 export const autoMatch = async (req, res, next) => {
   const { userId } = req.user;
   const { teamId } = req.body; // 사용자의 팀 ID를 요청 본문에서 가져옵니다.
@@ -218,8 +218,10 @@ export const autoMatch = async (req, res, next) => {
       },
     });
 
-    if (!userTeam || (userTeam.userId !== userId)) {
-      return res.status(404).json({ message: '선택한 팀을 찾을 수 없거나 소유하고 있는 팀이 아닐 수 있습니다.' });
+    if (!userTeam || userTeam.userId !== userId) {
+      return res
+        .status(404)
+        .json({ message: '선택한 팀을 찾을 수 없거나 소유하고 있는 팀이 아닐 수 있습니다.' });
     }
 
     if (userTeam.players.length !== 3) {
@@ -269,7 +271,7 @@ export const autoMatch = async (req, res, next) => {
       return res.status(404).json({ message: '상대방을 찾을 수 없습니다.' });
     }
 
-    // 랜덤하게 상대방 선택
+    // 검색된 상대방 중 랜덤하게 한 명 선택
     const randomIndex = Math.floor(Math.random() * validOpponents.length);
     const opponent = validOpponents[randomIndex];
 
@@ -277,7 +279,7 @@ export const autoMatch = async (req, res, next) => {
     const opponentValidTeams = opponent.teams.filter((team) => team.players.length === 3);
     const opponentTeam = opponentValidTeams[Math.floor(Math.random() * opponentValidTeams.length)];
 
-    // 상대방의 ID를 req.params에 설정하여 playMatch에 전달
+    // 상대방의 ID를 req.body에 설정하여 playMatch에 전달
     req.body.opponentId = opponent.id;
 
     // playMatch 함수를 호출하여 매치 진행 (opponentTeam을 인자로 전달)
@@ -287,4 +289,3 @@ export const autoMatch = async (req, res, next) => {
     next(error);
   }
 };
-
