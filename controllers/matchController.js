@@ -278,7 +278,7 @@ export const autoMatch = async (req, res, next) => {
     const opponentTeam = opponentValidTeams[Math.floor(Math.random() * opponentValidTeams.length)];
 
     // 상대방의 ID를 req.params에 설정하여 playMatch에 전달
-    req.params.opponentId = opponent.id;
+    req.body.opponentId = opponent.id;
 
     // playMatch 함수를 호출하여 매치 진행 (opponentTeam을 인자로 전달)
     // 인자로 주어야 플레이어가 playMatch()를 호출할 때 상대방의 팀을 임의로 선택하는 것을 방지할 수 있음.
