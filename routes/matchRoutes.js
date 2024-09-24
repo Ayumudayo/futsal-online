@@ -9,6 +9,6 @@ const router = express.Router();
 // '/play/:opponentId'가 먼저 와버리면 ':opponentId'를 'automatch'로 인식해버림
 // 따라서 /play/automatch'를 '/autoplay'로 수정
 router.post('/autoplay', authMiddleware, autoMatch);
-router.post('/play/:opponentId', authMiddleware, playMatch);
+router.post('/play', authMiddleware, playMatch);
 
 export default router;
