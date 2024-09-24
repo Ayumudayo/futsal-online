@@ -43,9 +43,8 @@ const calculateTeamScore = (team) => {
 };
 
 export const playMatch = async (req, res, next, opponentTeam = null) => {
-  const opponentId = req.params.opponentId;
   const { userId } = req.user;
-  const { teamId } = req.body;
+  const { teamId, opponentId } = req.body;
 
   try {
     // 사용자의 팀 검증
