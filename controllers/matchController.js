@@ -34,6 +34,7 @@ const calculatePlayerScore = (playerStats, enhanceLevel) => {
 
 // 선수 능력치 합산
 const calculateTeamScore = (team) => {
+  // 팀의 모든 선수에 대해 calculatePlayerScore 함수를 적용하여 점수를 합산
   return team.players.reduce((total, up) => {
     const playerStats = up.player;
     const playerScore = calculatePlayerScore(playerStats, up.level); // 이미 team.players로 돌리고 있어서 up에서 바로 level 가져오기 가능
@@ -46,19 +47,18 @@ export const playMatch = async (req, res, next) => {
   const { userId } = req.user;
 
   try {
-    // 유저 팀과 상대방 팀을 가져옴
+    // 유저의 팀과 상대방의 팀을 데이터베이스에서 조회
     const userTeams = await prisma.team.findMany({
       where: { userId },
       include: {
         players: {
           include: {
-            player: true,
+            player: true, // 선수의 세부 정보 포함
           },
         },
       },
     });
 
-    // 상대방의 팀 중에서 선수가 3명인 팀들을 가져옴
     const opponentTeams = await prisma.team.findMany({
       where: { userId: parseInt(opponentId) },
       include: {
@@ -70,14 +70,15 @@ export const playMatch = async (req, res, next) => {
       },
     });
 
-    // 플레이를 위한 팀에 선수가 3명 있는지 확인
+    // 유저의 팀 중 선수 수가 정확히 3명인 팀만 필터링
     const validUserTeams = userTeams.filter((team) => team.players.length === 3);
 
     if (validUserTeams.length === 0) {
       return res.status(400).json({ message: '자신의 팀이 없거나 선수가 부족합니다.' });
     }
+    }
 
-    // 상대팀 인원수도 확인
+    // 상대방의 팀 중 선수 수가 정확히 3명인 팀만 필터링
     const validOpponentTeams = opponentTeams.filter((team) => team.players.length === 3);
 
     if (validOpponentTeams.length === 0) {
@@ -86,28 +87,26 @@ export const playMatch = async (req, res, next) => {
         .json({ message: '상대방의 유효한 팀을 찾을 수 없거나 해당 유저가 존재하지 않습니다.' });
     }
 
-    // 유저의 팀 중에서 랜덤하게 선택
+    // 유저 팀과 상대 팀 중에서 랜덤하게 하나씩 선택
     const userTeam = validUserTeams[Math.floor(Math.random() * validUserTeams.length)];
-
-    // 상대방의 팀 중에서 랜덤하게 선택
     const opponentTeam = validOpponentTeams[Math.floor(Math.random() * validOpponentTeams.length)];
 
-    // 팀 점수 계산
+    // 선택된 팀의 총 점수 계산
     const scoreA = calculateTeamScore(userTeam);
     const scoreB = calculateTeamScore(opponentTeam);
 
-    // 경기 시뮬레이션
+    // 경기 시뮬레이션을 위한 총 점수과 랜덤 값 생성
     const totalScore = scoreA + scoreB;
     const randomValue = Math.random() * totalScore;
 
     let matchResult, resultMessage, scoreUser, scoreOpponent;
 
-    // 무승부 확률을 위해 임의의 값 생성
-    const drawThreshold = 0.05; // 5% 확률로 무승부 발생
+    // 무승부 확률 설정
+    const drawThreshold = 0.05;
     const matchRandom = Math.random();
 
     if (matchRandom < drawThreshold) {
-      // 무승부 처리
+      // 무승부 처리: 양쪽 점수를 랜덤하게 설정
       scoreUser = scoreOpponent = Math.floor(Math.random() * 3) + 1;
       matchResult = 'DRAW';
       resultMessage = '무승부';
@@ -125,7 +124,7 @@ export const playMatch = async (req, res, next) => {
       resultMessage = '패배';
     }
 
-    // 기록을 위한 트랜잭션
+    // 데이터베이스 트랜잭션을 통해 경기 기록 및 사용자 통계 업데이트
     await prisma.$transaction(async (prisma) => {
       // 경기 기록 생성
       await prisma.match.create({
@@ -138,8 +137,9 @@ export const playMatch = async (req, res, next) => {
         },
       });
 
-      // 유저 통계 업데이트
+      // 경기 결과에 따른 사용자 통계 업데이트
       if (matchResult === 'WIN') {
+        // 유저가 승리한 경우
         await prisma.user.update({
           where: { id: userId },
           data: {
@@ -155,6 +155,7 @@ export const playMatch = async (req, res, next) => {
           },
         });
       } else if (matchResult === 'LOSE') {
+        // 유저가 패배한 경우
         await prisma.user.update({
           where: { id: userId },
           data: {
@@ -170,6 +171,7 @@ export const playMatch = async (req, res, next) => {
           },
         });
       } else if (matchResult === 'DRAW') {
+        // 무승부인 경우
         await prisma.user.update({
           where: { id: userId },
           data: {
@@ -182,11 +184,13 @@ export const playMatch = async (req, res, next) => {
           data: {
             draws: { increment: 1 },
             leaguePoint: { increment: 3 },
+            leaguePoint: { increment: 3 },
           },
         });
       }
     });
 
+    // 경기 결과를 클라이언트에 응답
     res.status(200).json({
       message: `경기가 완료되었습니다. 결과: ${resultMessage}`,
       score: `${scoreUser} - ${scoreOpponent}`,
@@ -200,13 +204,18 @@ export const autoMatch = async (req, res, next) => {
   const { userId } = req.user;
 
   try {
+    // 현재 사용자의 정보 조회
     const user = await prisma.user.findUnique({ where: { id: userId } });
 
-    // LP +-30 범위 내의 상대 찾기
+    if (!user) {
+      return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+    }
+
+    // 리그 포인트(LP) 범위를 설정 (현재 LP +-30)
     const minLP = user.leaguePoint - 30;
     const maxLP = user.leaguePoint + 30;
 
-    // 상대방 검색
+    // LP 범위 내에 있는 상대방 사용자 검색
     const opponents = await prisma.user.findMany({
       where: {
         id: { not: userId },
@@ -221,14 +230,15 @@ export const autoMatch = async (req, res, next) => {
       return res.status(404).json({ message: '상대방을 찾을 수 없습니다.' });
     }
 
-    // 랜덤하게 상대 선택
+    // 검색된 상대방 중 랜덤하게 한 명 선택
     const randomIndex = Math.floor(Math.random() * opponents.length);
     const opponent = opponents[randomIndex];
 
-    // 경기를 진행하기 위해 opponentId 설정
+    // 선택된 상대방 ID를 playMatch 함수에 전달하기 위해 설정
     req.params.opponentId = opponent.id;
+
+    // playMatch 함수를 호출하여 매치 진행
     return playMatch(req, res, next);
-    //return res.json('test');
   } catch (error) {
     next(error);
   }

@@ -5,11 +5,12 @@ import logMiddleware from './middlewares/logMiddleware.js';
 import errorHandlingMiddleware from './middlewares/errorHandlingMiddleware.js';
 
 import authRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 import teamRoutes from './routes/teamRoutes.js';
 import matchRoutes from './routes/matchRoutes.js';
 import rankingRoutes from './routes/rankingRoutes.js';
 import enhancementRoutes from './routes/enhancementRoutes.js';
-//import gachaRoutes from './routes/gachaRoutes.js';
+import gachaRoutes from './routes/gachaRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -19,8 +20,8 @@ app.use(express.json());
 app.use(logMiddleware);
 
 app.use('/api/auth', authRoutes);
-// 사용자 API 라우트
-//app.use('/api/gacha', gachaRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/gacha', gachaRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/rankings', rankingRoutes);
