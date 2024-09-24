@@ -42,7 +42,7 @@ const calculateTeamScore = (team) => {
   }, 0);
 };
 
-export const playMatch = async (req, res, next) => {
+export const playMatch = async (req, res, next, opponentTeam = null) => {
   const opponentId = req.params.opponentId;
   const { userId } = req.user;
   const { teamId } = req.body;
@@ -61,33 +61,36 @@ export const playMatch = async (req, res, next) => {
     });
 
     if (!userTeam || (userTeam.userId !== userId)) {
-      return res.status(404).json({ message: '선택한 팀을 찾을 수 없거나 당신의 팀이 아닙니다.' });
+      return res.status(404).json({ message: '선택한 팀을 찾을 수 없거나 소유하고 있는 팀이 아닐 수 있습니다.' });
     }
-    
+
     if (userTeam.players.length !== 3) {
       return res.status(400).json({ message: '선수 3명이 있는 팀을 선택해야 합니다.' });
     }
 
-    // 상대방의 팀 조회 및 검증
-    const opponentTeams = await prisma.team.findMany({
-      where: { userId: parseInt(opponentId) },
-      include: {
-        players: {
-          include: {
-            player: true,
+    // 상대방의 팀 선택
+    if (!opponentTeam) {
+      // 상대방의 팀이 전달되지 않은 경우, 자동으로 선택
+      const opponentTeams = await prisma.team.findMany({
+        where: { userId: parseInt(opponentId) },
+        include: {
+          players: {
+            include: {
+              player: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    const validOpponentTeams = opponentTeams.filter((team) => team.players.length === 3);
+      const validOpponentTeams = opponentTeams.filter((team) => team.players.length === 3);
 
-    if (validOpponentTeams.length === 0) {
-      return res.status(400).json({ message: '상대방의 유효한 팀이 없습니다.' });
+      if (validOpponentTeams.length === 0) {
+        return res.status(400).json({ message: '상대방의 유효한 팀이 없습니다.' });
+      }
+
+      // 상대방의 팀을 유효한 팀 중에서 랜덤하게 선택
+      opponentTeam = validOpponentTeams[Math.floor(Math.random() * validOpponentTeams.length)];
     }
-
-    // 상대방의 팀을 유효한 팀 중에서 랜덤하게 선택
-    const opponentTeam = validOpponentTeams[Math.floor(Math.random() * validOpponentTeams.length)];
 
     // 선택된 팀들의 총 점수 계산
     const scoreA = calculateTeamScore(userTeam);
@@ -128,7 +131,7 @@ export const playMatch = async (req, res, next) => {
       await prisma.match.create({
         data: {
           playerAId: userId,
-          playerBId: opponentId,
+          playerBId: parseInt(opponentId),
           scoreA: scoreUser,
           scoreB: scoreOpponent,
           result: matchResult,
@@ -146,7 +149,7 @@ export const playMatch = async (req, res, next) => {
           },
         });
         await prisma.user.update({
-          where: { id: opponentId },
+          where: { id: parseInt(opponentId) },
           data: {
             losses: { increment: 1 },
             leaguePoint: { decrement: 10 },
@@ -162,7 +165,7 @@ export const playMatch = async (req, res, next) => {
           },
         });
         await prisma.user.update({
-          where: { id: opponentId },
+          where: { id: parseInt(opponentId) },
           data: {
             wins: { increment: 1 },
             leaguePoint: { increment: 10 },
@@ -178,7 +181,7 @@ export const playMatch = async (req, res, next) => {
           },
         });
         await prisma.user.update({
-          where: { id: opponentId },
+          where: { id: parseInt(opponentId) },
           data: {
             draws: { increment: 1 },
             leaguePoint: { increment: 3 },
@@ -198,6 +201,7 @@ export const playMatch = async (req, res, next) => {
 };
 
 
+
 export const autoMatch = async (req, res, next) => {
   const { userId } = req.user;
   const { teamId } = req.body; // 사용자의 팀 ID를 요청 본문에서 가져옵니다.
@@ -207,12 +211,16 @@ export const autoMatch = async (req, res, next) => {
     const userTeam = await prisma.team.findUnique({
       where: { id: teamId },
       include: {
-        players: true,
+        players: {
+          include: {
+            player: true,
+          },
+        },
       },
     });
 
     if (!userTeam || (userTeam.userId !== userId)) {
-      return res.status(404).json({ message: '선택한 팀을 찾을 수 없거나 당신의 팀이 아닙니다.' });
+      return res.status(404).json({ message: '선택한 팀을 찾을 수 없거나 소유하고 있는 팀이 아닐 수 있습니다.' });
     }
 
     if (userTeam.players.length !== 3) {
@@ -226,11 +234,11 @@ export const autoMatch = async (req, res, next) => {
       return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
     }
 
-    // 리그 포인트(LP) 범위 설정
+    // 리그 포인트(LP) 범위를 설정 (현재 LP +-30)
     const minLP = user.leaguePoint - 30;
     const maxLP = user.leaguePoint + 30;
 
-    // LP 범위 내에 있는 상대방 사용자 검색
+    // LP 범위 내에 있는 상대방 사용자 검색, 팀 정보 포함
     const opponents = await prisma.user.findMany({
       where: {
         id: { not: userId },
@@ -252,7 +260,7 @@ export const autoMatch = async (req, res, next) => {
       },
     });
 
-    // 유효한 팀이 있는 상대방만 필터링
+    // 상대방 중에서 유효한 팀(선수 3명)을 가진 사용자만 필터링
     const validOpponents = opponents.filter((opponent) => {
       const validTeams = opponent.teams.filter((team) => team.players.length === 3);
       return validTeams.length > 0;
@@ -270,13 +278,14 @@ export const autoMatch = async (req, res, next) => {
     const opponentValidTeams = opponent.teams.filter((team) => team.players.length === 3);
     const opponentTeam = opponentValidTeams[Math.floor(Math.random() * opponentValidTeams.length)];
 
-    // 필요한 정보를 playMatch에 전달하기 위해 요청 본문에 추가
-    req.body.opponentId = opponent.id;
-    req.body.opponentTeamId = opponentTeam.id;
+    // 상대방의 ID를 req.params에 설정하여 playMatch에 전달
+    req.params.opponentId = opponent.id;
 
-    // playMatch 함수를 호출하여 매치 진행
-    return playMatch(req, res, next);
+    // playMatch 함수를 호출하여 매치 진행 (opponentTeam을 인자로 전달)
+    // 인자로 주어야 플레이어가 playMatch()를 호출할 때 상대방의 팀을 임의로 선택하는 것을 방지할 수 있음.
+    return playMatch(req, res, next, opponentTeam);
   } catch (error) {
     next(error);
   }
 };
+
