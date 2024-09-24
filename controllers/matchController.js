@@ -76,7 +76,6 @@ export const playMatch = async (req, res, next) => {
     if (validUserTeams.length === 0) {
       return res.status(400).json({ message: '자신의 팀이 없거나 선수가 부족합니다.' });
     }
-    }
 
     // 상대방의 팀 중 선수 수가 정확히 3명인 팀만 필터링
     const validOpponentTeams = opponentTeams.filter((team) => team.players.length === 3);
