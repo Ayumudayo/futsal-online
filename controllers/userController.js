@@ -51,10 +51,10 @@ export const getUserProfile = async (req, res, next) => {
 // 유저의 모든 선수를 가져옴
 export const getAllPlayer = async (req, res, next) => {
   try {
-    const {userId} = req.user;
-    
+    const { userId } = req.user;
+
     const playerData = await prisma.userPlayer.findMany({
-      where: {userId},
+      where: { userId },
       select: {
         id: true,
         level: true,
@@ -66,13 +66,13 @@ export const getAllPlayer = async (req, res, next) => {
             goalScoring: true,
             shotPower: true,
             defense: true,
-            stamina: true
-          }
+            stamina: true,
+          },
         },
-      }
+      },
     });
 
-    res.status(200).json({playerData});
+    res.status(200).json({ playerData });
   } catch (error) {
     next(error);
   }
