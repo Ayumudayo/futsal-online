@@ -1,6 +1,16 @@
 import prisma from '../utils/prisma.js';
 
-const calculatePlayerScore = (playerStats) => {
+const calculateEnhancedValue = (baseValue, level) => {
+  let mult = 1;
+  if (level === 0) mult = 1.0;
+  else if (level >= 1 && level <= 3) mult = 1.1;
+  else if (level >= 4 && level <= 6) mult = 1.3;
+  else if (level >= 7 && level <= 8) mult = 1.7;
+
+  return Math.floor(baseValue * mult);
+};
+
+const calculatePlayerScore = (playerStats, enhanceLevel) => {
   const weights = {
     speed: 0.1,
     goalScoring: 0.25,
@@ -10,21 +20,23 @@ const calculatePlayerScore = (playerStats) => {
   };
 
   // 발제 문서에 있는 예시 활용
-  const score =
+  let score =
     playerStats.speed * weights.speed +
     playerStats.goalScoring * weights.goalScoring +
     playerStats.shotPower * weights.shotPower +
     playerStats.defense * weights.defense +
     playerStats.stamina * weights.stamina;
 
+  score = calculateEnhancedValue(score, enhanceLevel);
+
   return score;
 };
 
-// reduce로 선수 능력치 합산
+// 선수 능력치 합산
 const calculateTeamScore = (team) => {
   return team.players.reduce((total, up) => {
     const playerStats = up.player;
-    const playerScore = calculatePlayerScore(playerStats);
+    const playerScore = calculatePlayerScore(playerStats, up.level); // 이미 team.players로 돌리고 있어서 up에서 바로 level 가져오기 가능
     return total + playerScore;
   }, 0);
 };
@@ -63,7 +75,7 @@ export const playMatch = async (req, res, next) => {
 
     if (validUserTeams.length === 0) {
       return res.status(400).json({ message: '자신의 팀이 없거나 선수가 부족합니다.' });
-    }   
+    }
 
     // 상대팀 인원수도 확인
     const validOpponentTeams = opponentTeams.filter((team) => team.players.length === 3);
@@ -101,13 +113,13 @@ export const playMatch = async (req, res, next) => {
       resultMessage = '무승부';
     } else if (randomValue < scoreA) {
       // 유저 승리
-      scoreUser = Math.floor(Math.random() * 4) + 2;      // 2에서 5 사이
+      scoreUser = Math.floor(Math.random() * 4) + 2; // 2에서 5 사이
       scoreOpponent = Math.floor(Math.random() * Math.min(3, scoreUser));
       matchResult = 'WIN';
       resultMessage = '승리';
     } else {
       // 유저 패배
-      scoreOpponent = Math.floor(Math.random() * 4) + 2;  // 2에서 5 사이
+      scoreOpponent = Math.floor(Math.random() * 4) + 2; // 2에서 5 사이
       scoreUser = Math.floor(Math.random() * Math.min(3, scoreOpponent));
       matchResult = 'LOSE';
       resultMessage = '패배';

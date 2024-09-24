@@ -49,35 +49,51 @@ const dbDataMap = dbData.reduce((map, player) => {
 }, {});
 
 // 새로운 데이터를 DB에 삽입 / 데이터 변경
-for (let i = 0; i < firstSheeJson.length; i++) {
-  const isPlayer = dbDataMap[firstSheeJson[i]['id']];
-  if (isPlayer) {
-    if (!isSamePlayer(firstSheeJson[i], dbData[i])) {
-      console.log(dbData[i]['name'] + '변경!!!!');
-      await prisma.player.update({
-        data: {
-          speed: firstSheeJson[i]['speed'],
-          goalScoring: firstSheeJson[i]['goalScoring'],
-          shotPower: firstSheeJson[i]['shotPower'],
-          defense: firstSheeJson[i]['defense'],
-          stamina: firstSheeJson[i]['stamina'],
-        },
-        where: {
-          id: firstSheeJson[i]['id'],
-        },
-      });
+const promiseAll = [];
+for(let i=0; i<firstSheeJson.length; i++) {
+    // 인덱스 순서가 아닌 id 순서로 비교할 수 있도록
+    const currentPlayer = firstSheeJson[i];
+    const isPlayer = dbDataMap[currentPlayer['id']];
+    if(isPlayer) {
+        if (!isSamePlayer(currentPlayer, isPlayer)) {
+            console.log(isPlayer['name'] + ' 변경!!!!');
+            const promise = prisma.player.update({
+                data: {
+                    speed: currentPlayer['speed'],
+                    goalScoring: currentPlayer['goalScoring'],
+                    shotPower: currentPlayer['shotPower'],
+                    defense: currentPlayer['defense'],
+                    stamina: currentPlayer['stamina'],
+                },
+                where: {
+                    id: currentPlayer['id']
+                }
+            });
+            promiseAll.push(promise);
+        }
     }
-  } else {
-    await prisma.player.create({
-      data: {
-        id: firstSheeJson[i]['id'],
-        name: firstSheeJson[i]['name'],
-        speed: firstSheeJson[i]['speed'],
-        goalScoring: firstSheeJson[i]['goalScoring'],
-        shotPower: firstSheeJson[i]['shotPower'],
-        defense: firstSheeJson[i]['defense'],
-        stamina: firstSheeJson[i]['stamina'],
-      },
-    });
-  }
+    else {
+        console.log(currentPlayer['id'] + '삽입');
+        const promise = prisma.player.create({
+            data: {
+                id: currentPlayer['id'],
+                name: currentPlayer['name'],
+                speed: currentPlayer['speed'],
+                goalScoring: currentPlayer['goalScoring'],
+                shotPower: currentPlayer['shotPower'],
+                defense: currentPlayer['defense'],
+                stamina: currentPlayer['stamina'],
+            }
+        });
+        promiseAll.push(promise);
+    }
 }
+
+const results = await Promise.allSettled(promiseAll);
+
+// 각 Promise의 상태를 확인
+results.forEach((result, index) => {
+    if (result.status === "rejected") {
+        console.log(`작업 ${index}: 실패`, result.reason);
+    }
+});
